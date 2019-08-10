@@ -45,6 +45,18 @@ window.boot = function () {
                 }
             }
         }
+
+        var subpackages = settings.subpackages;
+        for (var subId in subpackages) {
+            var uuidArray = subpackages[subId].uuids;
+            if (uuidArray) {
+                for (var k = 0, l = uuidArray.length; k < l; k++) {
+                    if (typeof uuidArray[k] === 'number') {
+                        uuidArray[k] = uuids[uuidArray[k]];
+                    }
+                }
+            }
+        }
     }
 
     function setLoadingDisplay () {
@@ -99,33 +111,30 @@ window.boot = function () {
             }
         }
 
-        // init assets
-        cc.AssetLibrary.init({
-            libraryPath: 'res/import',
-            rawAssetsBase: 'res/raw-',
-            rawAssets: settings.rawAssets,
-            packedAssets: settings.packedAssets,
-            md5AssetsMap: settings.md5AssetsMap
-        });
+        function loadScene(launchScene) {
+            cc.director.loadScene(launchScene, null,
+                function () {
+                    if (cc.sys.isBrowser) {
+                        // show canvas
+                        var canvas = document.getElementById('GameCanvas');
+                        canvas.style.visibility = '';
+                        var div = document.getElementById('GameDiv');
+                        if (div) {
+                            div.style.backgroundImage = '';
+                        }
+                    }
+                    cc.loader.onProgress = null;
+                    console.log('Success to load scene: ' + launchScene);
+                }
+            );
+
+        }
 
         var launchScene = settings.launchScene;
 
         // load scene
-        cc.director.loadScene(launchScene, null,
-            function () {
-                if (cc.sys.isBrowser) {
-                    // show canvas
-                    var canvas = document.getElementById('GameCanvas');
-                    canvas.style.visibility = '';
-                    var div = document.getElementById('GameDiv');
-                    if (div) {
-                        div.style.backgroundImage = '';
-                    }
-                }
-                cc.loader.onProgress = null;
-                console.log('Success to load scene: ' + launchScene);
-            }
-        );
+        loadScene(launchScene);
+
     };
 
     // jsList
@@ -146,12 +155,7 @@ window.boot = function () {
             jsList = [bundledScript];
         }
     }
-
-    // anysdk scripts
-    if (cc.sys.isNative && cc.sys.isMobile) {
-        jsList = jsList.concat(['src/anysdk/jsb_anysdk.js', 'src/anysdk/jsb_anysdk_constants.js']);
-    }
-
+    
     var option = {
         id: 'GameCanvas',
         scenes: settings.scenes,
@@ -162,6 +166,16 @@ window.boot = function () {
         groupList: settings.groupList,
         collisionMatrix: settings.collisionMatrix,
     }
+
+    // init assets
+    cc.AssetLibrary.init({
+        libraryPath: 'res/import',
+        rawAssetsBase: 'res/raw-',
+        rawAssets: settings.rawAssets,
+        packedAssets: settings.packedAssets,
+        md5AssetsMap: settings.md5AssetsMap,
+        subpackages: settings.subpackages
+    });
 
     cc.game.run(option, onStart);
 };
@@ -186,12 +200,23 @@ if (false) {
     qqPlayDownloader.REMOTE_SERVER_ROOT = "";
     var prevPipe = cc.loader.md5Pipe || cc.loader.assetLoader;
     cc.loader.insertPipeAfter(prevPipe, qqPlayDownloader);
-
+    
     window.boot();
 }
 else if (window.jsb) {
-    require('src/settings.js');
-    require('src/cocos2d-jsb.js');
-    require('jsb-adapter/engine/index.js');
+
+    var isRuntime = (typeof loadRuntime === 'function');
+    if (isRuntime) {
+        require('src/settings.js');
+        require('src/cocos2d-runtime.js');
+        require('jsb-adapter/engine/index.js');
+    }
+    else {
+        require('src/settings.js');
+        require('src/cocos2d-jsb.js');
+        require('jsb-adapter/jsb-engine.js');
+    }
+
+    cc.macro.CLEANUP_IMAGE_CACHE = true;
     window.boot();
 }

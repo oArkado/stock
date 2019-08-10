@@ -42,12 +42,16 @@ body {
 
   display: flex;
   flex-direction: column;
+  
+  /* fix bug: https://github.com/cocos-creator/2d-tasks/issues/791 */
+  /* overflow cannot be applied in Cocos2dGameContainer, 
+  otherwise child elements will be hidden when Cocos2dGameContainer rotated 90 deg */
+  overflow: hidden;
 }
 
 #Cocos2dGameContainer {
   position: absolute;
   margin: 0;
-  overflow: hidden;
   left: 0px;
   top: 0px;
 
